@@ -207,15 +207,15 @@ def sample(now):
     return m
 
 def main():
-    hook=os.environ.get('DISCORD_WEBHOOK_URL')
-    if not hook: sys.exit('DISCORD_WEBHOOK_URL is not set (Settings → Secrets and variables → Actions)')
     mode=os.environ.get('MODE','run')
-    if mode=='sample': ok=deliver(hook,sample(dt.datetime.now(dt.timezone.utc))); print('sample delivered' if ok else 'sample failed'); sys.exit(0 if ok else 1)
     if mode=='probe':
         for game,f in FETCHERS.items():
             try: print(game,f())
             except Exception as e: print(game,'ERROR',type(e).__name__,str(e)[:300])
         return
+    hook=os.environ.get('DISCORD_WEBHOOK_URL')
+    if not hook: sys.exit('DISCORD_WEBHOOK_URL is not set (Settings → Secrets and variables → Actions)')
+    if mode=='sample': ok=deliver(hook,sample(dt.datetime.now(dt.timezone.utc))); print('sample delivered' if ok else 'sample failed'); sys.exit(0 if ok else 1)
     rep=run(hook); print(json.dumps(rep))
     if len(rep['errors'])==len(FETCHERS): sys.exit('No jackpot data could be read: '+'; '.join(rep['errors']))
 if __name__=='__main__': main()
