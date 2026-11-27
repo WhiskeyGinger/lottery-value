@@ -209,11 +209,12 @@ def sample(now):
 def main():
     mode=os.environ.get('MODE','run')
     if mode=='probe':
-        try:
-            html=http('https://www.powerball.com/'); print('HOMEPAGE',len(html))
-            for word in ('Estimated Jackpot','Cash Value','Next Drawing','next-drawing','game-jackpot-number'):
-                for m in list(re.finditer(re.escape(word),html))[:2]: print('SNIP',word,'::',re.sub(r'\s+',' ',html[m.start():m.start()+400]))
-        except Exception as e: print('HOMEPAGE ERROR',type(e).__name__)
+        for url in ('https://www.powerball.com/api/v1/estimates/powerball?_format=json','https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/12/1/1',
+                    'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/index.html','https://www.lotteryusa.com/powerball/','https://www.powerball.net/'):
+            try:
+                body=http(url); print('URL',url,'LEN',len(body),'HEAD',re.sub(r'\s+',' ',body[:250]))
+                for m in list(re.finditer(r'(?i)(jackpot|cash)',body))[:4]: print('  NEAR',re.sub(r'\s+',' ',body[m.start():m.start()+220]))
+            except Exception as e: print('URL',url,'ERROR',type(e).__name__,str(e)[:120])
         for game,f in FETCHERS.items():
             try: print(game,f())
             except Exception as e: print(game,'ERROR',type(e).__name__,str(e)[:300])
