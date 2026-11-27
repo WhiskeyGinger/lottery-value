@@ -209,6 +209,11 @@ def sample(now):
 def main():
     mode=os.environ.get('MODE','run')
     if mode=='probe':
+        try:
+            html=http('https://www.powerball.com/'); print('HOMEPAGE',len(html))
+            for word in ('Estimated Jackpot','Cash Value','Next Drawing','next-drawing','game-jackpot-number'):
+                for m in list(re.finditer(re.escape(word),html))[:2]: print('SNIP',word,'::',re.sub(r'\s+',' ',html[m.start():m.start()+400]))
+        except Exception as e: print('HOMEPAGE ERROR',type(e).__name__)
         for game,f in FETCHERS.items():
             try: print(game,f())
             except Exception as e: print(game,'ERROR',type(e).__name__,str(e)[:300])
