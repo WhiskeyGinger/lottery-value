@@ -3,7 +3,9 @@ name: Lottery value meter
 on:
   schedule:
     # Daily at 8:13 AM Central (14:13 UTC in winter): posts the games that draw tonight. Public repo: free minutes.
-    - cron: "13 14 * * *"
+    - cron: "13 14 * * *"   # 8:13 AM Central
+    - cron: "43 16 * * *"   # backup 10:43 AM (never posts twice)
+    - cron: "43 19 * * *"   # backup 1:43 PM
   workflow_dispatch:
     inputs:
       mode:
