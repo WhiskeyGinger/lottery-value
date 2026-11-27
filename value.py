@@ -181,7 +181,16 @@ MIN_JACKPOT=float(os.environ.get('MIN_JACKPOT','0') or 0)
 def central_date(t):
     t=t.astimezone(dt.timezone.utc); return (t+dt.timedelta(hours=-5 if is_dst_us(t-dt.timedelta(hours=6)) else -6)).date()
 
+
+PING_ROLE_ID=os.environ.get('PING_ROLE_ID','').strip()   # 🔔 role members pick in onboarding; pinged on each post
+
+def with_ping(payload):
+    if PING_ROLE_ID.isdigit() and '<@&' not in (payload.get('content') or ''):
+        payload=dict(payload,content=('<@&%s> '%PING_ROLE_ID)+(payload.get('content') or ''),allowed_mentions={'parse':[],'roles':[PING_ROLE_ID]})
+    return payload
+
 def deliver(hook, payload, opener=urllib.request.urlopen, sleep=time.sleep, attempts=3):
+    payload=with_ping(payload)
     url=hook+('&' if '?' in hook else '?')+'wait=true'
     for a in range(attempts):
         try:

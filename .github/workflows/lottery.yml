@@ -43,6 +43,7 @@ jobs:
       - name: Lottery value
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PING_ROLE_ID: ${{ vars.PING_ROLE_ID || '1575983338672357466' }}
           STATE_TAX: ${{ vars.STATE_TAX }}
           STATE_NAME: ${{ vars.STATE_NAME }}
           MIN_JACKPOT: ${{ vars.MIN_JACKPOT }}
