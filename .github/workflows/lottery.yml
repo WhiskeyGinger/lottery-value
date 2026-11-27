@@ -1,0 +1,54 @@
+name: Lottery value meter
+
+on:
+  schedule:
+    # Daily at 8:13 AM Central (14:13 UTC in winter): posts the games that draw tonight. Public repo: free minutes.
+    - cron: "13 14 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'run = post tonight''s drawings; sample = labelled example; probe = check the jackpot sources'
+        required: false
+        default: run
+        type: choice
+        options: [run, sample, probe]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lottery
+  cancel-in-progress: false
+
+jobs:
+  meter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Restore posted drawings
+        uses: actions/cache/restore@v4
+        with:
+          path: .state
+          key: posted-${{ github.run_id }}
+          restore-keys: |
+            posted-
+      - name: Run tests
+        run: python -m unittest -v
+      - name: Lottery value
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          STATE_TAX: ${{ vars.STATE_TAX }}
+          STATE_NAME: ${{ vars.STATE_NAME }}
+          MIN_JACKPOT: ${{ vars.MIN_JACKPOT }}
+          MODE: ${{ inputs.mode || 'run' }}
+        run: python value.py
+      - name: Save posted drawings
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .state
+          key: posted-${{ github.run_id }}
