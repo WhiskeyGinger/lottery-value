@@ -92,16 +92,23 @@ def money(s):
     unit=(m.group(2) or '').lower()
     return v*1e9 if unit in ('billion','b') else v*1e6 if unit in ('million','m') else v
 
-POWERBALL_API='https://www.powerball.com/api/v1/estimates/powerball?_format=json'
+POWERBALL_API='https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/12/1/1'   # California Lottery's official feed
 MEGA_API='https://www.megamillions.com/cmspages/utilservice.asmx/GetLatestDrawData'
+POWERBALL_DRAW_TIME=dt.time(22,59)                                                            # Eastern, Mon/Wed/Sat
 
 def powerball(fetch=http):
-    """(jackpot, cash, next_draw_utc) from powerball.com."""
-    d=json.loads(fetch(POWERBALL_API))
-    row=d[0] if isinstance(d,list) and d else d
-    jackpot=money(row.get('field_prize_amount')); cash=money(row.get('field_prize_amount_cash'))
-    when=row.get('field_next_draw_date')
-    return jackpot,cash,parse_when(when)
+    """(jackpot, cash, next_draw_utc). Powerball's own site blocks automated requests; the California Lottery publishes
+    the same national jackpot and cash value. Only the jackpot figures are used from it (California pays its lower
+    tiers differently, which does not affect the national prize table used here)."""
+    d=json.loads(fetch(POWERBALL_API)); n=d.get('NextDraw') or {}
+    jackpot=money(n.get('JackpotAmount')); cash=money(n.get('EstimatedCashValue'))
+    day=None
+    try: day=dt.date.fromisoformat(str(n.get('DrawDate',''))[:10])
+    except ValueError: pass
+    when=None
+    if day:
+        naive=dt.datetime.combine(day,POWERBALL_DRAW_TIME); when=naive.replace(tzinfo=EASTERN_GUESS(naive))
+    return jackpot,cash,when
 
 def megamillions(fetch=http):
     raw=fetch(MEGA_API,data=b'{}',headers={'Content-Type':'application/json; charset=utf-8'})
@@ -209,12 +216,6 @@ def sample(now):
 def main():
     mode=os.environ.get('MODE','run')
     if mode=='probe':
-        for url in ('https://www.powerball.com/api/v1/estimates/powerball?_format=json','https://www.calottery.com/api/DrawGameApi/DrawGamePastDrawResults/12/1/1',
-                    'https://www.texaslottery.com/export/sites/lottery/Games/Powerball/index.html','https://www.lotteryusa.com/powerball/','https://www.powerball.net/'):
-            try:
-                body=http(url); print('URL',url,'LEN',len(body),'HEAD',re.sub(r'\s+',' ',body[:250]))
-                for m in list(re.finditer(r'(?i)(jackpot|cash)',body))[:4]: print('  NEAR',re.sub(r'\s+',' ',body[m.start():m.start()+220]))
-            except Exception as e: print('URL',url,'ERROR',type(e).__name__,str(e)[:120])
         for game,f in FETCHERS.items():
             try: print(game,f())
             except Exception as e: print(game,'ERROR',type(e).__name__,str(e)[:300])

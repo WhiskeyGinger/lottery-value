@@ -47,4 +47,14 @@ class Run(unittest.TestCase):
     def test_sample_labelled(self):
         self.assertTrue(all(e['title'].startswith('🧪 SAMPLE') for e in V.sample(NOW)['embeds']))
 
+class Sources(unittest.TestCase):
+    def test_powerball_from_california_feed(self):
+        body=json.dumps({'NextDraw':{'DrawDate':'2026-11-28T08:00:00','JackpotAmount':48000000.0,'EstimatedCashValue':20200000.0}})
+        j,c,w=V.powerball(lambda url:body); self.assertEqual((j,c),(48e6,20.2e6))
+        self.assertEqual(w.astimezone(dt.timezone.utc),dt.datetime(2026,11,29,3,59,tzinfo=dt.timezone.utc))
+    def test_megamillions_feed(self):
+        inner=json.dumps({'Jackpot':{'NextPrizePool':673000000,'NextCashValue':282600000},'NextDrawingDate':'2026-11-27T23:00:00'})
+        j,c,w=V.megamillions(lambda url,data=None,headers=None:json.dumps({'d':inner})); self.assertEqual((j,c),(673e6,282.6e6))
+        self.assertEqual(w.astimezone(dt.timezone.utc),dt.datetime(2026,11,28,4,0,tzinfo=dt.timezone.utc))
+
 if __name__=='__main__': unittest.main()
