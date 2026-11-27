@@ -147,17 +147,26 @@ def embed(r, when, state_label):
     g=GAMES[r['game']]; worth=r['value']; price=r['price']; good=worth>price
     head='%s %s — %s jackpot'%(g['emoji'],g['name'],big(r['jackpot']))+(' · %s'%central(when) if when else '')
     lines=['💵 A $%g ticket is really worth **$%.2f**'%(price,worth)]
-    if good: lines.append('🚨 **Worth more than it costs** — about **+$%.2f** per ticket on average'%(worth-price))
+    if good: lines.append('🚨 **Worth more than it costs** — about **+$%.2f** per ticket on average (still a long shot)'%(worth-price))
     else: lines.append('📉 You lose about **$%.2f** per ticket on average (you get back %d%%)'%(price-worth,round(100*worth/price)))
     lines.append('_Why: %s cash option → %s after taxes → you keep about %d%% if you win (bigger jackpots sell more tickets, so more people split it)_'%(
         big(r['cash']),big(r['after_tax_cash']),round(100*r['share'])))
     return {'title':head,'description':'\n'.join(lines),'color':15548997 if good else 15105570,
             'footer':{'text':'Odds 1 in %s · taxes: 37%% federal%s · ticket sales estimated · not betting advice'%('{:,}'.format(round(r['jackpot_odds'])),state_label)}}
 
+HOW_TO_READ=('**How to read this**\n'
+             '• "Really worth $X" = what you\'d win back **on average** per ticket if you could buy this ticket millions of times.\n'
+             '• Less than the price = a losing bet on average (normal). More than the price = 🚨 a rare good deal *on paper*.\n'
+             '• Even on 🚨 days you\'ll almost certainly lose: the jackpot is about 1 in 290 million. '
+             'Treat 🚨 as **the best day to play for fun**, not a reason to spend more.')
+
 def message(results):
     any_good=any(r['value']>r['price'] for r,_ in results)
-    m={'username':'Lottery Value Meter','allowed_mentions':{'parse':[]},'embeds':[embed(r,w,STATE_LABEL) for r,w in results]}
-    if any_good: m['content']='🚨 **Rare: a lottery ticket is worth more than it costs today.**'
+    es=[embed(r,w,STATE_LABEL) for r,w in results]
+    es.append({'description':HOW_TO_READ,'color':9807270})
+    m={'username':'Lottery Value Meter','allowed_mentions':{'parse':[]},'embeds':es}
+    if any_good: m['content']=('🚨 **Rare: a lottery ticket is worth more than it costs today.** '
+                               'Best day to play *for fun* — you\'ll still almost certainly lose, so only spend what you\'re OK losing.')
     return m
 
 STATE_TAX=float(os.environ.get('STATE_TAX','0') or 0)
@@ -209,7 +218,8 @@ def run(hook, now=None, fetchers=None, send=deliver, state_path=STATE_PATH, stat
 def sample(now):
     r1=ticket_value('powerball',850e6,400e6,STATE_TAX); r2=ticket_value('megamillions',1.5e9,690e6,STATE_TAX)
     m=message([(r1,now+dt.timedelta(hours=10)),(r2,now+dt.timedelta(hours=34))])
-    for e in m['embeds']: e['title']='🧪 SAMPLE — '+e['title']
+    for e in m['embeds']:
+        if 'title' in e: e['title']='🧪 SAMPLE — '+e['title']
     m['content']='🧪 **Sample with made-up jackpots** — this is what real posts look like.'
     return m
 

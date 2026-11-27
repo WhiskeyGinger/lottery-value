@@ -37,15 +37,15 @@ class Run(unittest.TestCase):
     def test_message_text(self):
         V.run('H',NOW,self.f(),self.send,self.p,0); e=self.sent[0]['embeds'][0]
         self.assertIn('Sat Nov 28, 9:59 PM CST',e['title']); self.assertIn('A $2 ticket is really worth **$',e['description']); self.assertIn('📉',e['description'])
-        self.assertNotIn('content',self.sent[0])
+        self.assertNotIn('content',self.sent[0]); self.assertIn('How to read this',self.sent[0]['embeds'][-1]['description'])
     def test_alarm_when_worth_more_than_price(self):
         f={'powerball':lambda:(9e9,4.5e9,TONIGHT)}
-        V.run('H',NOW,f,self.send,self.p,0); self.assertIn('🚨',self.sent[0]['content'])
+        V.run('H',NOW,f,self.send,self.p,0); self.assertIn('🚨',self.sent[0]['content']); self.assertIn('for fun',self.sent[0]['content'])
     def test_feed_error_reported(self):
         def boom(): raise OSError()
         r=V.run('H',NOW,{'powerball':boom},self.send,self.p,0); self.assertEqual(r['errors'],['powerball: OSError']); self.assertEqual(self.sent,[])
     def test_sample_labelled(self):
-        self.assertTrue(all(e['title'].startswith('🧪 SAMPLE') for e in V.sample(NOW)['embeds']))
+        self.assertTrue(all(e['title'].startswith('🧪 SAMPLE') for e in V.sample(NOW)['embeds'] if 'title' in e))
 
 class Sources(unittest.TestCase):
     def test_powerball_from_california_feed(self):
